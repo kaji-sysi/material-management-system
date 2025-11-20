@@ -69,6 +69,8 @@ Next.jsで構築した製造業向けの包括的な工程管理システムの�
 
 - **フレームワーク**: Next.js 16 (App Router)
 - **言語**: TypeScript
+- **データベース**: Supabase (PostgreSQL)
+- **状態管理**: TanStack Query (React Query)
 - **スタイリング**: Tailwind CSS
 - **チャート**: Recharts
 - **ドラッグ&ドロップ**: @dnd-kit
@@ -77,6 +79,8 @@ Next.jsで構築した製造業向けの包括的な工程管理システムの�
 - **アイコン**: lucide-react
 
 ## 📦 インストールと起動
+
+### クイックスタート（モックデータ）
 
 ```bash
 # 依存パッケージのインストール
@@ -87,6 +91,23 @@ npm run dev
 ```
 
 ブラウザで [http://localhost:3000](http://localhost:3000) を開いてアプリケーションを確認できます。
+
+**注**: 環境変数が設定されていない場合、モックデータが表示されます。
+
+### Supabaseデータベースと連携
+
+実際のデータベースを使用する場合は、[SUPABASE_SETUP.md](./SUPABASE_SETUP.md) を参照してください。
+
+1. Supabaseプロジェクトを作成
+2. `supabase/schema.sql` を実行してテーブルを作成
+3. `.env.local` ファイルを作成して環境変数を設定:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+4. アプリケーションを再起動
 
 ## 📁 プロジェクト構造
 
@@ -119,26 +140,76 @@ material-management-system/
 
 ## 📊 実装されている機能
 
+### フロントエンド（UI/UX）
 - ✅ ダッシュボード（統計・グラフ表示）
 - ✅ ガントチャート（工程スケジュール管理）
 - ✅ カンバンボード（ドラッグ&ドロップタスク管理）
 - ✅ カレンダー（スケジュール可視化）
-- ✅ 工程管理（CRUD操作）
+- ✅ 工程管理（CRUD操作UI）
 - ✅ 作業者管理（スキル・資格管理）
 - ✅ 在庫管理（在庫状況・アラート）
 - ✅ 品質管理（検査結果・統計）
 - ✅ 設備管理（稼働状況・メンテナンス）
 - ✅ レポート（月次実績・KPI）
 
+### バックエンド（データベース連携）
+- ✅ Supabase クライアント設定
+- ✅ データベーススキーマ（SQL）
+- ✅ API関数（工程、作業者、在庫、品質、設備）
+- ✅ React Query による状態管理
+- 📝 各ページのデータベース連携（サンプル実装あり）
+
 ## 🎨 カスタマイズ
 
-### モックデータの編集
-`lib/mockData.ts` ファイルを編集してデータをカスタマイズできます。
+### モード選択
 
-### 実際のAPIへの接続
-1. APIクライアントを作成 (例: `lib/api.ts`)
-2. 各ページでモックデータのインポートをAPIコールに置き換え
-3. 状態管理ライブラリの導入を検討
+#### 1. モックデータモード（デフォルト）
+環境変数を設定せずに起動すると、`lib/mockData.ts` のモックデータが使用されます。
+- データベース不要
+- すぐに動作確認可能
+
+#### 2. Supabaseモード
+`.env.local` に環境変数を設定すると、Supabaseデータベースに接続されます。
+- 実際のCRUD操作が可能
+- データの永続化
+
+### データベース連携の実装
+
+各APIエンドポイントは `lib/api/` ディレクトリにあります:
+- `processes.ts` - 工程管理
+- `workers.ts` - 作業者管理
+- `inventory.ts` - 在庫管理
+- `quality.ts` - 品質管理
+- `equipment.ts` - 設備管理
+
+ページでの使用例:
+
+```typescript
+'use client';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProcesses, createProcess } from '@/lib/api/processes';
+
+export default function ProcessesPage() {
+  const queryClient = useQueryClient();
+
+  // データ取得
+  const { data: processes, isLoading } = useQuery({
+    queryKey: ['processes'],
+    queryFn: getProcesses,
+  });
+
+  // 作成
+  const createMutation = useMutation({
+    mutationFn: createProcess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processes'] });
+    },
+  });
+
+  // ...
+}
+```
 
 ## 📝 ライセンス
 
